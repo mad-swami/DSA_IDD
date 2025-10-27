@@ -1,5 +1,15 @@
 package org.example
 
+const val goalReward = 100
+const val wallPenalty = -10
+const val stepPenalty = -1
+
+const val learningRate = 0.1
+const val discountFactor = 0.9
+const val explorationStart = 1.0
+const val explorationEnd = 0.01
+const val numEpisodes = 100
+
 val actions = arrayOf(
     Pair(-1, 0), // down
     Pair(1, 0), // up
@@ -7,10 +17,11 @@ val actions = arrayOf(
     Pair(0, -1) // left
 )
 
-const val goalReward = 100
-const val wallPenalty = -10
-const val stepPenalty = -1
-
+data class EpisodeResult(
+    val totalReward: Double,
+    val steps: Int,
+    val path: List<Pair<Int, Int>>
+)
 //TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
 // click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
 fun main() {
@@ -31,6 +42,9 @@ fun main() {
 
     // create a Q Learning Maze object
     val maze = QLearningMaze(mazeLayout, startingPoint, endingPoint)
+
+    val agent = QLearningAgent(maze, learningRate, discountFactor, explorationStart, explorationEnd, numEpisodes)
+    testAgent(agent, maze)
 }
 
 /**
@@ -45,7 +59,7 @@ fun main() {
  * @param train whether the agent will learn or not based on the episode
  * @return an array of the episodeReward, episodeStep, and path
  */
-fun finishEpisode(agent: QLearningAgent, maze: QLearningMaze, currentEpisode: Int, train: Boolean): Array<Any> {
+fun finishEpisode(agent: QLearningAgent, maze: QLearningMaze, currentEpisode: Int, train: Boolean): EpisodeResult {
     // set current state to the maze starting position
     var currentState = maze.startPos
     var isDone = false
@@ -98,7 +112,20 @@ fun finishEpisode(agent: QLearningAgent, maze: QLearningMaze, currentEpisode: In
     }
 
     // return the overall episode reward, the steps this episode took, and the path it took
-    return arrayOf(episodeReward, episodeStep, path)
+    return EpisodeResult(episodeReward, episodeStep, path)
+}
+
+fun testAgent(agent: QLearningAgent, maze: QLearningMaze, numEpisodes: Int = 1) {
+    val (episodeReward, episodeStep, path) = finishEpisode(agent, maze, numEpisodes, train = false)
+
+    println("Learned Path:")
+    for(pos in path) {
+        print("($pos)-> ")
+    }
+    println("Goal!")
+
+    println("Number of steps: $episodeStep")
+    println("Total reward: $episodeReward")
 }
 
 
