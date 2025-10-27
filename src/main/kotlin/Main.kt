@@ -1,15 +1,21 @@
 package org.example
 
+
+// const values for rewards, wall penalty, and step penalty
+// set to different values to test
 const val goalReward = 100
 const val wallPenalty = -10
 const val stepPenalty = -1
 
+
+// learning values to help teach the agent
 const val learningRate = 0.1
 const val discountFactor = 0.9
 const val explorationStart = 1.0
 const val explorationEnd = 0.01
 const val numEpisodes = 100
 
+// actions the agent cna take
 val actions = arrayOf(
     Pair(-1, 0), // down
     Pair(1, 0), // up
@@ -17,13 +23,17 @@ val actions = arrayOf(
     Pair(0, -1) // left
 )
 
+// class to store the episode results
 data class EpisodeResult(
     val totalReward: Double,
     val steps: Int,
     val path: List<Pair<Int, Int>>
 )
-//TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
-// click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
+
+/**
+ * Main script to initialize a maze, test the agent, train it, and then test it again.
+ *
+ */
 fun main() {
 
     // initialize the maze layout that we want to use for our tests
@@ -43,8 +53,17 @@ fun main() {
     // create a Q Learning Maze object
     val maze = QLearningMaze(mazeLayout, startingPoint, endingPoint)
 
+    // initialize the agent
     val agent = QLearningAgent(maze, learningRate, discountFactor, explorationStart, explorationEnd, numEpisodes)
+
+    // test the untrained agent, expected to do poorly
     testAgent(agent, maze)
+
+    // train the agent over 100 episodes
+    trainAgent(agent, maze, numEpisodes = 100)
+
+    // test the agent again over 100 episodes
+    testAgent(agent, maze, numEpisodes = 100)
 }
 
 /**
@@ -115,17 +134,61 @@ fun finishEpisode(agent: QLearningAgent, maze: QLearningMaze, currentEpisode: In
     return EpisodeResult(episodeReward, episodeStep, path)
 }
 
+/**
+ * Test the agent over an episode and print the results
+ *
+ * Given an agent and a maze run the agent through the maze. Print the resulting path along with the number of steps and
+ * the total reward for the path.
+ *
+ * @param agent an agent of the class [QLearningAgent]
+ * @param maze a maze of the class [QLearningMaze]
+ * @param numEpisodes number of episodes to run
+ */
 fun testAgent(agent: QLearningAgent, maze: QLearningMaze, numEpisodes: Int = 1) {
     val (episodeReward, episodeStep, path) = finishEpisode(agent, maze, numEpisodes, train = false)
 
+    // print the learned path
     println("Learned Path:")
     for(pos in path) {
         print("($pos)-> ")
     }
+    // reached the goal!
     println("Goal!")
 
+    // number of steps the agent took
     println("Number of steps: $episodeStep")
+    // total reward over the episode
     println("Total reward: $episodeReward")
 }
 
+/**
+ * Train the agent over a number of episodes.
+ *
+ * Given an agent, a maze, and a number of episodes the agent will run through the episodes learning and updating q
+ * values and will learn from its decisions
+ *
+ * @param agent a [QLearningAgent] object
+ * @param maze a [QLearningMaze] object
+ * @param numEpisodes the number of episodes the agent will learn over
+ */
+fun trainAgent(agent: QLearningAgent, maze: QLearningMaze, numEpisodes: Int) {
+    val episodeRewards = mutableListOf<Double>()
+    val episodeSteps = mutableListOf<Int>()
+
+    // run the agent over the number of episodes and store how steps it took to finish each episode and the total reward
+    for (episode in 0 until numEpisodes) {
+        val (episodeReward, episodeStep) = finishEpisode(agent, maze, episode, train = true)
+
+        episodeRewards.add(episodeReward)
+        episodeSteps.add(episodeStep)
+    }
+
+    // calculate and print average reward
+    val averageReward = episodeRewards.sum() / episodeRewards.size
+    println("The average reward is: $averageReward")
+
+    // calculate and print the average steps over each episode
+    val averageSteps = episodeSteps.sum() / episodeSteps.size
+    println("The average steps is: $averageSteps")
+}
 
