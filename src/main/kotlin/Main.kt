@@ -33,19 +33,37 @@ fun main() {
     val maze = QLearningMaze(mazeLayout, startingPoint, endingPoint)
 }
 
-fun finishEpisode(agent: QLearningAgent, maze: QLearningMaze, currentEpisode: Int, train: Boolean = true): Array<Any> {
+/**
+ * Go through an episode of the maze as the agent
+ *
+ * Given an agent it will take the agent through a given maze. The agent will continue through the maze until it
+ * finishes and if train is set to true then the agent's q values will be updated and it will learn.
+ *
+ * @param agent an agent of class [QLearningAgent]
+ * @param maze an agent of class [QLearningMaze]
+ * @param currentEpisode the episode that the agent is at
+ * @param train whether the agent will learn or not based on the episode
+ * @return an array of the episodeReward, episodeStep, and path
+ */
+fun finishEpisode(agent: QLearningAgent, maze: QLearningMaze, currentEpisode: Int, train: Boolean): Array<Any> {
+    // set current state to the maze starting position
     var currentState = maze.startPos
     var isDone = false
     var episodeReward = 0.0
     var episodeStep = 0
     val path = mutableListOf(currentState)
 
+    // continue while the agent isn't done with the maze
     while (!isDone) {
+        // get the action for the agent to commit
         val action = agent.getAction(currentState, currentEpisode)
 
+        // get the next state that the agent will take
         var nextState = Pair(currentState.first + actions[action].first, currentState.second + actions[action].second)
         var reward: Double
 
+        // if the agent would take a step outside the maze or into a wall then give it a wall penalty and keep it in
+        // the same place
         if ((nextState.first < 0) || (nextState.first >= maze.mazeHeight)
             || (nextState.second < 0) || (nextState.second >= maze.mazeWidth)
             || (maze.mazeLayout[nextState.first][nextState.second] == 1)
@@ -54,23 +72,33 @@ fun finishEpisode(agent: QLearningAgent, maze: QLearningMaze, currentEpisode: In
             reward = wallPenalty.toDouble()
             nextState = currentState
 
+        // if the agent reaches the end of the maze then it gets the goal reward and the loop ends
         } else if (nextState == maze.endPos) {
             path.add(currentState)
             reward = goalReward.toDouble()
             isDone = true
+
+        // if the agent takes a regular step then it will receive a step penalty
         } else {
             path.add(currentState)
             reward = stepPenalty.toDouble()
         }
 
+        // add the reward of this move to the overall episode reward and move one step forward
         episodeReward += reward
         episodeStep += 1
 
+        // if we are training the agent then update the q table for the agent
         if (train) {
             agent.updateQTable(currentState, action, nextState, reward)
         }
 
+        // move the current state forward
         currentState = nextState
     }
+
+    // return the overall episode reward, the steps this episode took, and the path it took
     return arrayOf(episodeReward, episodeStep, path)
 }
+
+
